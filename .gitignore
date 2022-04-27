@@ -1,0 +1,4 @@
+build/xkeyslug
+*.d
+*.o
+*.sublime-*
