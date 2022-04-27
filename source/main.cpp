@@ -6,6 +6,8 @@
 #include <signal.h>
 
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 #include <X11/Xlib.h>
 #include <libevdev/libevdev.h>
@@ -27,6 +29,10 @@ int main(int argc, char** argv)
 
 	libevdev_set_fd(device_ev, device_fd);
 
+	// wait a bit before grabbing
+	using namespace std::chrono_literals;
+	std::this_thread::sleep_for(500ms);
+
 	slug::loop(device_ev);
 
 	libevdev_free(device_ev);
@@ -36,13 +42,14 @@ int main(int argc, char** argv)
 
 void slug::loop(struct libevdev* device_ev)
 {
-	// if(auto err = libevdev_grab(device_ev, LIBEVDEV_GRAB); err != 0)
-	// {
-	// 	zpr::fprintln(stderr, "failed to grab device: {} ({})", strerror(err), err);
-	// 	exit(-1);
-	// }
+	if(auto err = libevdev_grab(device_ev, LIBEVDEV_GRAB); err != 0)
+	{
+		zpr::fprintln(stderr, "failed to grab device: {} ({})", strerror(err), err);
+		exit(-1);
+	}
 
-	zpr::println("xkeyslug: grabbed device '{}'", KEYBOARD_EVENT_DEVICE);
+	auto device_name = libevdev_get_name(device_ev);
+	zpr::println("xkeyslug: grabbed device '{}'", device_name);
 
 	auto x_display = XOpenDisplay(0);
 	if(x_display == nullptr)
@@ -71,12 +78,10 @@ void slug::loop(struct libevdev* device_ev)
 			continue;
 		}
 
-		bool transformed = processKeyEvent(&uinputter, x_display, event.code, KeyAction { event.value });
-		if(not transformed)
-			uinputter.send(event.type, event.code, event.value, /* sync: */ true);
+		processKeyEvent(&uinputter, x_display, event.code, KeyAction { event.value });
 	}
 
 	XCloseDisplay(x_display);
 
-	// libevdev_grab(device_ev, LIBEVDEV_UNGRAB);
+	libevdev_grab(device_ev, LIBEVDEV_UNGRAB);
 }

@@ -59,5 +59,5 @@ namespace slug
 		Repeat  = 2
 	};
 
-	bool processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int code, KeyAction action);
+	void processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int code, KeyAction action);
 }

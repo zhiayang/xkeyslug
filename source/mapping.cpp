@@ -17,6 +17,15 @@ static keycode_t remap_single_key(const slug::WindowInfo& window_info, keycode_t
 	if(keycode == KEY_CAPSLOCK)
 		return KEY_MACRO1;
 
+	// for sublime text, keep meta as meta.
+	if(keycode == KEY_LEFTMETA)
+	{
+		if(window_info.wm_class == "Sublime_text")
+			return KEY_LEFTMETA;
+		else
+			return KEY_RIGHTCTRL;
+	}
+
 	return keycode;
 }
 
@@ -25,25 +34,21 @@ static keycode_t remap_single_key(const slug::WindowInfo& window_info, keycode_t
 
 
 
-bool slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int keycode, KeyAction action)
+void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int keycode, KeyAction action)
 {
 	auto window_info = getCurrentWindowInfo(x_display);
 
 	// first, perform single remappings.
 	keycode = remap_single_key(window_info, keycode);
 
-	if(action == KeyAction::Press || action == KeyAction::Repeat)
-		g_pressedKeys.insert(keycode);
-	else
+	if(action == KeyAction::Release)
+	{
+		// if we're releasing keys, then just always release the key.
 		g_pressedKeys.erase(keycode);
+		uinput->send(EV_KEY, keycode, static_cast<int>(action), /* sync: */ true);
+		return;
+	}
 
-
-
-
-	uinput->send(EV_KEY, keycode, static_cast<int>(action), /* sync: */ false);
-
-
-
-
-	return false;
+	g_pressedKeys.insert(keycode);
+	uinput->send(EV_KEY, keycode, static_cast<int>(action), /* sync: */ true);
 }
