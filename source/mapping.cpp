@@ -47,14 +47,33 @@ static bool remap_key_combo(const slug::WindowInfo& window_info, UInputDevice* u
 {
 	if(ui->isPressed(MOD_CAPSLOCK))
 	{
-		if(keycode == KEY_Q || keycode == KEY_K)
-			return ui->sendKeyMomentary(KEY_BACKSPACE);
+		if(keycode == KEY_Q || keycode == KEY_K)    return ui->sendKeyMomentary(KEY_BACKSPACE);
+		else if(keycode == KEY_W)                   return ui->sendKeyMomentary(KEY_UP);
+		else if(keycode == KEY_A)                   return ui->sendKeyMomentary(KEY_LEFT);
+		else if(keycode == KEY_S)                   return ui->sendKeyMomentary(KEY_DOWN);
+		else if(keycode == KEY_D)                   return ui->sendKeyMomentary(KEY_RIGHT);
+		else if(keycode == KEY_SEMICOLON || keycode == KEY_LEFT)
+			return ui->sendKeyMomentary(KEY_HOME);
+		else if(keycode == KEY_APOSTROPHE || keycode == KEY_RIGHT)
+			return ui->sendKeyMomentary(KEY_END);
 	}
 
 	if(window_info.wm_class == "firefox")
 	{
 		if(ui->isPressedReal(KEY_LEFTMETA) && KEY_1 <= keycode && keycode <= KEY_9)
 			return ui->sendCombo({ KEY_LEFTALT }, keycode);
+	}
+	else if(window_info.wm_class == "konsole")
+	{
+		if(ui->isPressedReal(KEY_LEFTMETA))
+		{
+			if(keycode == KEY_K)
+				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_K);
+			else if(keycode == KEY_T)
+				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_T);
+			else if(keycode == KEY_W)
+				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_W);
+		}
 	}
 
 	return false;

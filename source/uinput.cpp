@@ -69,7 +69,6 @@ namespace slug
 			{
 				unrelated_modifiers.insert(x);
 				this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
-				zpr::println("release {}", x);
 			}
 		}
 
@@ -79,19 +78,17 @@ namespace slug
 			{
 				extra_modifiers.insert(x);
 				this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
-				zpr::println("press {}", x);
 			}
 		}
 
-		zpr::println("actual: {}", keycode);
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Press), /* sync: */ false);
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Release), /* sync: */ false);
 
 		for(auto x : unrelated_modifiers)
-			zpr::println("press(2): {}", x), this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
+			this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
 
 		for(auto x : extra_modifiers)
-			zpr::println("release(2): {}", x), this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
+			this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
 
 		if(should_sync)
 			this->sync();
