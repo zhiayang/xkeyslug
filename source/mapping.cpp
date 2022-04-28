@@ -11,6 +11,8 @@
 
 using namespace slug;
 
+constexpr auto MOD_CAPSLOCK = KEY_MACRO1;
+
 static inline bool is_modifier(keycode_t key)
 {
 	return key == KEY_LEFTMETA
@@ -21,13 +23,13 @@ static inline bool is_modifier(keycode_t key)
 		|| key == KEY_RIGHTALT
 		|| key == KEY_LEFTSHIFT
 		|| key == KEY_RIGHTSHIFT
-		|| key == KEY_MACRO1;
+		|| key == MOD_CAPSLOCK;
 }
 
-static keycode_t remap_single_key(const slug::WindowInfo& window_info, keycode_t keycode)
+static keycode_t remap_single_key(const slug::WindowInfo& window_info, UInputDevice* ui, keycode_t keycode)
 {
 	if(keycode == KEY_CAPSLOCK)
-		return KEY_MACRO1;
+		return MOD_CAPSLOCK;
 
 	// for sublime text, keep meta as meta.
 	if(keycode == KEY_LEFTMETA)
@@ -43,42 +45,55 @@ static keycode_t remap_single_key(const slug::WindowInfo& window_info, keycode_t
 
 static bool remap_key_combo(const slug::WindowInfo& window_info, UInputDevice* ui, keycode_t keycode, KeyAction action)
 {
+	if(ui->isPressed(MOD_CAPSLOCK))
+	{
+		if(keycode == KEY_Q || keycode == KEY_K)
+			return ui->sendKeyMomentary(KEY_BACKSPACE);
+	}
+
 	if(window_info.wm_class == "firefox")
 	{
 		if(ui->isPressedReal(KEY_LEFTMETA) && KEY_1 <= keycode && keycode <= KEY_9)
 			return ui->sendCombo({ KEY_LEFTALT }, keycode);
 	}
 
-
 	return false;
 }
 
 
 
+static std::unordered_map<keycode_t, keycode_t> g_currentMapping;
 
-
-void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int keycode, KeyAction action)
+void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int real_keycode, KeyAction action)
 {
 	auto window_info = getCurrentWindowInfo(x_display);
 
-	auto real_keycode = keycode;
 	uinput->pressReal(real_keycode);
-
-	// first, perform single remappings.
-	keycode = remap_single_key(window_info, real_keycode);
 
 	if(action == KeyAction::Release)
 	{
 		// if we're releasing keys, then just always release the key.
+		auto keycode = real_keycode;
+		if(auto it = g_currentMapping.find(keycode); it != g_currentMapping.end())
+		{
+			keycode = it->second;
+			g_currentMapping.erase(it);
+		}
+
 		if(is_modifier(keycode))
 			uinput->unpress(keycode);
 
 		if(is_modifier(real_keycode))
 			uinput->unpressReal(real_keycode);
 
-		uinput->send(EV_KEY, keycode, static_cast<int>(action), /* sync: */ true);
+		uinput->sendKey(keycode, action, /* sync: */ true);
 		return;
 	}
+
+	// first, perform single remappings.
+	auto keycode = remap_single_key(window_info, uinput, real_keycode);
+	if(keycode != real_keycode)
+		g_currentMapping[real_keycode] = keycode;
 
 	if(is_modifier(keycode))
 		uinput->press(keycode);
@@ -88,5 +103,5 @@ void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned in
 
 	// if there was no mapping, then just forward the key.
 	if(not remap_key_combo(window_info, uinput, keycode, action))
-		uinput->send(EV_KEY, keycode, static_cast<int>(action), /* sync: */ true);
+		uinput->sendKey(keycode, action, /* sync: */ true);
 }

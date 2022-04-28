@@ -75,6 +75,9 @@ void slug::loop(struct libevdev* device_ev)
 			continue;
 		}
 
+		if(event.type == EV_SYN && event.code == SYN_DROPPED)
+			zpr::println("too slow!");
+
 		if(event.type != EV_KEY)
 		{
 			uinputter.send(event.type, event.code, event.value, /* sync: */ true);

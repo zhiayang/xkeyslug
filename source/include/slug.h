@@ -30,6 +30,13 @@ namespace slug
 {
 	using keycode_t = unsigned int;
 
+	enum class KeyAction
+	{
+		Release = 0,
+		Press   = 1,
+		Repeat  = 2
+	};
+
 
 	struct UInputDevice
 	{
@@ -38,6 +45,9 @@ namespace slug
 
 		// note: syncs by default. always returns true (kek)
 		bool send(unsigned int type, unsigned int code, int value, bool sync = true);
+
+		bool sendKeyMomentary(keycode_t keycode, bool sync = true);
+		bool sendKey(keycode_t keycode, KeyAction action, bool sync = true);
 		bool sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool sync = true);
 		void sync();
 
@@ -66,13 +76,6 @@ namespace slug
 	};
 
 	WindowInfo getCurrentWindowInfo(Display* x_display);
-
-	enum class KeyAction
-	{
-		Release = 0,
-		Press   = 1,
-		Repeat  = 2
-	};
 
 	void processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int code, KeyAction action);
 }

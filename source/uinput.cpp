@@ -35,6 +35,26 @@ namespace slug
 		return true;
 	}
 
+	bool UInputDevice::sendKeyMomentary(keycode_t keycode, bool should_sync)
+	{
+		libevdev_uinput_write_event(m_uinput, EV_KEY, keycode, static_cast<int>(KeyAction::Press));
+		libevdev_uinput_write_event(m_uinput, EV_KEY, keycode, static_cast<int>(KeyAction::Release));
+
+		if(should_sync)
+			this->sync();
+
+		return true;
+	}
+
+	bool UInputDevice::sendKey(keycode_t key, KeyAction action, bool should_sync)
+	{
+		libevdev_uinput_write_event(m_uinput, EV_KEY, key, static_cast<int>(action));
+		if(should_sync)
+			this->sync();
+
+		return true;
+	}
+
 	bool UInputDevice::sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool should_sync)
 	{
 		// send one set of stuff (without syncing); release any unrelated modifiers,
@@ -49,6 +69,7 @@ namespace slug
 			{
 				unrelated_modifiers.insert(x);
 				this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
+				zpr::println("release {}", x);
 			}
 		}
 
@@ -58,17 +79,19 @@ namespace slug
 			{
 				extra_modifiers.insert(x);
 				this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
+				zpr::println("press {}", x);
 			}
 		}
 
+		zpr::println("actual: {}", keycode);
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Press), /* sync: */ false);
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Release), /* sync: */ false);
 
 		for(auto x : unrelated_modifiers)
-			this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
+			zpr::println("press(2): {}", x), this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
 
 		for(auto x : extra_modifiers)
-			this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
+			zpr::println("release(2): {}", x), this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
 
 		if(should_sync)
 			this->sync();
