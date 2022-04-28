@@ -32,6 +32,8 @@ namespace slug
 			if(stdfs::exists(foo))
 			{
 				zpr::println("xkeyslug: using '{}' to control fn key", foo.native());
+				fflush(stdout);
+
 				m_fn_control_fd = open(foo.c_str(), O_RDWR);
 				if(m_fn_control_fd == -1)
 					zpr::fprintln(stderr, "failed to open '{}': {} ({})", foo.c_str(), strerror(errno), errno);
@@ -60,6 +62,8 @@ namespace slug
 			return;
 
 		zpr::println("xkeyslug: simulating fn key: {}", action == KeyAction::Release ? "release" : "press");
+		fflush(stdout);
+
 		write(m_fn_control_fd, action == KeyAction::Press ? "2" : "1", 1);
 	}
 
@@ -92,7 +96,8 @@ namespace slug
 		return true;
 	}
 
-	bool UInputDevice::sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool should_sync)
+	bool UInputDevice::sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode,
+		bool should_sync, bool dont_unpress_mods)
 	{
 		// send one set of stuff (without syncing); release any unrelated modifiers,
 		// press the modifiers we need to press, send press the keycode, then re-press the unrelated modifiers,
@@ -100,7 +105,7 @@ namespace slug
 
 		std::unordered_set<keycode_t> extra_modifiers {};
 		std::unordered_set<keycode_t> unrelated_modifiers {};
-		for(auto x : m_modifiers)
+		for(auto x : m_real_modifiers)
 		{
 			if(modifiers.find(x) == modifiers.end())
 			{
@@ -111,12 +116,15 @@ namespace slug
 
 		for(auto x : modifiers)
 		{
-			if(m_modifiers.find(x) == m_modifiers.end())
+			if(m_real_modifiers.find(x) == m_real_modifiers.end())
 			{
 				extra_modifiers.insert(x);
 				this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
 			}
 		}
+
+		// zpr::println("sending combo");
+		// fflush(stdout);
 
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Press), /* sync: */ false);
 		this->send(EV_KEY, keycode, static_cast<int>(KeyAction::Release), /* sync: */ false);
@@ -124,8 +132,11 @@ namespace slug
 		for(auto x : unrelated_modifiers)
 			this->send(EV_KEY, x, static_cast<int>(KeyAction::Press), /* sync: */ false);
 
-		for(auto x : extra_modifiers)
-			this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
+		if(not dont_unpress_mods)
+		{
+			for(auto x : extra_modifiers)
+				this->send(EV_KEY, x, static_cast<int>(KeyAction::Release), /* sync: */ false);
+		}
 
 		if(should_sync)
 			this->sync();

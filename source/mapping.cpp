@@ -58,12 +58,7 @@ static bool remap_key_combo(const slug::WindowInfo& window_info, UInputDevice* u
 			return ui->sendKeyMomentary(KEY_END);
 	}
 
-	if(window_info.wm_class == "firefox")
-	{
-		if(ui->isPressedReal(KEY_LEFTMETA) && KEY_1 <= keycode && keycode <= KEY_9)
-			return ui->sendCombo({ KEY_LEFTALT }, keycode);
-	}
-	else if(window_info.wm_class == "konsole")
+	if(window_info.wm_class == "konsole")
 	{
 		if(ui->isPressedReal(KEY_LEFTMETA))
 		{
@@ -73,11 +68,49 @@ static bool remap_key_combo(const slug::WindowInfo& window_info, UInputDevice* u
 				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_T);
 			else if(keycode == KEY_W)
 				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_W);
+			else if(keycode == KEY_C)
+				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_C);
+			else if(keycode == KEY_V)
+				return ui->sendCombo({ KEY_LEFTCTRL, KEY_LEFTSHIFT }, KEY_V);
+		}
+	}
+	else if(window_info.wm_class != "Sublime_text")
+	{
+		if(window_info.wm_class == "firefox" && ui->isPressedReal(KEY_LEFTMETA) && KEY_1 <= keycode && keycode <= KEY_9)
+			return ui->sendCombo({ KEY_LEFTALT }, keycode);
+
+		if(ui->isPressedReal(KEY_LEFTALT))
+		{
+			if(keycode == KEY_LEFT)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_LEFT);
+			else if(keycode == KEY_RIGHT)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_RIGHT);
+			else if(keycode == KEY_UP)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_UP);
+			else if(keycode == KEY_DOWN)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_DOWN);
+			else if(keycode == KEY_BACKSPACE)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_BACKSPACE);
+			else if(keycode == KEY_DELETE)
+				return ui->sendCombo({ KEY_LEFTCTRL }, KEY_DELETE);
 		}
 	}
 
 	return false;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -92,17 +125,10 @@ void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned in
 		return;
 	}
 
-
-
-
-
-
-
-
-
 	auto window_info = getCurrentWindowInfo(x_display);
 
-	uinput->pressReal(real_keycode);
+	if(is_modifier(real_keycode))
+		uinput->pressReal(real_keycode);
 
 	if(action == KeyAction::Release)
 	{

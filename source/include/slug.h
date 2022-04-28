@@ -50,7 +50,7 @@ namespace slug
 
 		bool sendKeyMomentary(keycode_t keycode, bool sync = true);
 		bool sendKey(keycode_t keycode, KeyAction action, bool sync = true);
-		bool sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool sync = true);
+		bool sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool sync = true, bool dont_unpress_mods = false);
 		void sync();
 
 		void pressReal(keycode_t key);

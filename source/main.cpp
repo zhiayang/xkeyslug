@@ -50,6 +50,7 @@ void slug::loop(struct libevdev* device_ev)
 
 	auto device_name = libevdev_get_name(device_ev);
 	zpr::println("xkeyslug: grabbed device '{}'", device_name);
+	fflush(stdout);
 
 	auto x_display = XOpenDisplay(0);
 	if(x_display == nullptr)
@@ -60,10 +61,13 @@ void slug::loop(struct libevdev* device_ev)
 
 	auto uinputter = slug::UInputDevice(device_ev);
 
-	signal(SIGINT, [](int) {
+	auto handler = [](int) {
 		zpr::println("xkeyslug: quitting");
 		g_quit.store(true, std::memory_order_relaxed);
-	});
+	};
+
+	signal(SIGINT, handler);
+	signal(SIGTERM, handler);
 
 	while(not g_quit.load(std::memory_order_relaxed))
 	{
@@ -76,7 +80,7 @@ void slug::loop(struct libevdev* device_ev)
 		}
 
 		if(event.type == EV_SYN && event.code == SYN_DROPPED)
-			zpr::println("too slow!");
+			zpr::fprintln(stderr, "too slow!"), fflush(stderr);
 
 		if(event.type != EV_KEY)
 		{
