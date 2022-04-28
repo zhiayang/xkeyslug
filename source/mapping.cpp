@@ -85,6 +85,21 @@ static std::unordered_map<keycode_t, keycode_t> g_currentMapping;
 
 void slug::processKeyEvent(UInputDevice* uinput, Display* x_display, unsigned int real_keycode, KeyAction action)
 {
+	// special handling for function key
+	if(real_keycode == KEY_FN)
+	{
+		uinput->changeFnKeyState(action);
+		return;
+	}
+
+
+
+
+
+
+
+
+
 	auto window_info = getCurrentWindowInfo(x_display);
 
 	uinput->pressReal(real_keycode);

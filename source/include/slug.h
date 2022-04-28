@@ -43,6 +43,8 @@ namespace slug
 		UInputDevice(struct libevdev* based_on);
 		~UInputDevice();
 
+		void changeFnKeyState(KeyAction action);
+
 		// note: syncs by default. always returns true (kek)
 		bool send(unsigned int type, unsigned int code, int value, bool sync = true);
 
@@ -60,6 +62,7 @@ namespace slug
 		bool isPressed(keycode_t key) const;
 
 	private:
+		int m_fn_control_fd;
 		struct libevdev_uinput* m_uinput;
 		std::unordered_set<keycode_t> m_modifiers;
 		std::unordered_set<keycode_t> m_real_modifiers;

@@ -4,11 +4,14 @@
 
 #include "slug.h"
 
+#include <filesystem>
+
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
 
 namespace slug
 {
+	namespace stdfs = std::filesystem;
 	UInputDevice::UInputDevice(struct libevdev* based_on)
 	{
 		auto err = libevdev_uinput_create_from_device(/* based? based on what? */ based_on,
@@ -19,11 +22,45 @@ namespace slug
 			zpr::fprintln(stderr, "failed to create uinput: {}", err);
 			exit(1);
 		}
+
+		m_fn_control_fd = -1;
+
+		auto path = stdfs::path("/sys/class/input/");
+		for(auto dir : stdfs::directory_iterator(path))
+		{
+			auto foo = path / dir.path() / "device/fnmode";
+			if(stdfs::exists(foo))
+			{
+				zpr::println("xkeyslug: using '{}' to control fn key", foo.native());
+				m_fn_control_fd = open(foo.c_str(), O_RDWR);
+				if(m_fn_control_fd == -1)
+					zpr::fprintln(stderr, "failed to open '{}': {} ({})", foo.c_str(), strerror(errno), errno);
+
+				break;
+			}
+		}
 	}
 
 	UInputDevice::~UInputDevice()
 	{
 		libevdev_uinput_destroy(m_uinput);
+		if(m_fn_control_fd != -1)
+			close(m_fn_control_fd);
+	}
+
+	void UInputDevice::changeFnKeyState(KeyAction action)
+	{
+		if(m_fn_control_fd == -1)
+		{
+			zpr::fprintln(stderr, "xkeyslug: couldn't find fnmode controller, ignoring fn key");
+			return;
+		}
+
+		if(action == KeyAction::Repeat)
+			return;
+
+		zpr::println("xkeyslug: simulating fn key: {}", action == KeyAction::Release ? "release" : "press");
+		write(m_fn_control_fd, action == KeyAction::Press ? "2" : "1", 1);
 	}
 
 	bool UInputDevice::send(unsigned int type, unsigned int code, int value, bool should_sync)
