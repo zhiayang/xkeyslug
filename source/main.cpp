@@ -70,7 +70,10 @@ void slug::loop(struct libevdev* device_ev)
 		struct input_event event {};
 		auto r = libevdev_next_event(device_ev, LIBEVDEV_READ_FLAG_NORMAL | LIBEVDEV_READ_FLAG_BLOCKING, &event);
 		if(r < 0)
+		{
 			zpr::fprintln(stderr, "libevdev error: {}", r);
+			continue;
+		}
 
 		if(event.type != EV_KEY)
 		{

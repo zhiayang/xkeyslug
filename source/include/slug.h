@@ -17,6 +17,7 @@
 
 #include <utility>
 #include <string_view>
+#include <unordered_set>
 
 #include "zpr.h"
 
@@ -27,17 +28,31 @@ struct libevdev_uinput;
 
 namespace slug
 {
+	using keycode_t = unsigned int;
+
+
 	struct UInputDevice
 	{
 		UInputDevice(struct libevdev* based_on);
 		~UInputDevice();
 
-		// note: syncs by default
-		void send(unsigned int type, unsigned int code, int value, bool sync = true);
+		// note: syncs by default. always returns true (kek)
+		bool send(unsigned int type, unsigned int code, int value, bool sync = true);
+		bool sendCombo(const std::unordered_set<keycode_t>& modifiers, keycode_t keycode, bool sync = true);
 		void sync();
+
+		void pressReal(keycode_t key);
+		void unpressReal(keycode_t key);
+		bool isPressedReal(keycode_t key) const;
+
+		void press(keycode_t key);
+		void unpress(keycode_t key);
+		bool isPressed(keycode_t key) const;
 
 	private:
 		struct libevdev_uinput* m_uinput;
+		std::unordered_set<keycode_t> m_modifiers;
+		std::unordered_set<keycode_t> m_real_modifiers;
 	};
 
 	void loop(struct libevdev* device_ev);
